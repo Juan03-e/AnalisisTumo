@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TUMO — Análisis Personal</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg:       #0e0e0e;
+  --surface:  #1a1a1a;
+  --surface2: #222222;
+  --border:   #2e2e2e;
+  --orange:   #ff6b00;
+  --orange2:  #ff8c33;
+  --yellow:   #ffd000;
+  --green:    #2ecc71;
+  --red:      #e74c3c;
+  --red2:     #ff6b6b;
+  --text:     #f0f0f0;
+  --muted:    #888;
+  --muted2:   #555;
+  --sidebar:  220px;
+}
+
+body { background: var(--bg); color: var(--text); font-family: 'Nunito Sans', sans-serif; min-height: 100vh; }
+
+/* ══ PANTALLA DE CARGA ══ */
+#uploadScreen {
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px 20px; position: relative; overflow: hidden;
+}
+.bg-shapes { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.bg-shape { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.12; }
+.bg-shape.s1 { width: 500px; height: 500px; background: var(--orange); top: -150px; right: -100px; }
+.bg-shape.s2 { width: 400px; height: 400px; background: var(--yellow); bottom: -100px; left: -80px; }
+
+.upload-header { text-align: center; margin-bottom: 48px; }
+.tumo-wordmark { font-family: 'Nunito', sans-serif; font-size: 52px; font-weight: 900; letter-spacing: -2px; color: var(--orange); line-height: 1; margin-bottom: 6px; }
+.tumo-subtitle { font-size: 15px; font-weight: 600; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+
+.drop-card {
+  background: var(--surface); border: 2px dashed var(--border); border-radius: 20px;
+  padding: 56px 48px; text-align: center; width: min(540px, 100%);
+  cursor: pointer; transition: all 0.25s;
+}
+.drop-card:hover, .drop-card.dragging { border-color: var(--orange); background: rgba(255,107,0,0.05); transform: translateY(-2px); }
+.upload-emoji { font-size: 56px; margin-bottom: 20px; display: block; transition: transform 0.3s; }
+.drop-card:hover .upload-emoji { transform: scale(1.1) rotate(-5deg); }
+.drop-title { font-family: 'Nunito', sans-serif; font-size: 22px; font-weight: 800; margin-bottom: 10px; }
+.drop-desc { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 28px; }
+#fileInput { display: none; }
+.upload-cta { background: var(--orange); color: #fff; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 15px; padding: 14px 32px; border-radius: 50px; border: none; cursor: pointer; transition: all 0.2s; }
+.upload-cta:hover { background: var(--orange2); transform: scale(1.04); }
+
+.rules-pills { margin-top: 32px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.rule-pill { background: var(--surface2); border: 1px solid var(--border); border-radius: 50px; padding: 8px 16px; font-size: 13px; font-weight: 600; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.rule-pill .hl { color: var(--orange); }
+
+.error-toast { margin-top: 16px; background: rgba(231,76,60,0.15); border: 1px solid rgba(231,76,60,0.3); border-radius: 12px; padding: 12px 20px; font-size: 13px; font-weight: 600; color: var(--red2); display: none; max-width: 540px; text-align: center; }
+
+/* ══ APP ══ */
+#app { display: none; }
+
+/* Top nav */
+.topnav {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 0 24px; display: flex; align-items: center; justify-content: space-between;
+  height: 64px; position: sticky; top: 0; z-index: 200;
+}
+.nav-left { display: flex; align-items: center; gap: 16px; }
+.nav-brand { font-family: 'Nunito', sans-serif; font-size: 28px; font-weight: 900; color: var(--orange); letter-spacing: -1px; text-decoration: none; }
+.nav-sep { width: 1px; height: 28px; background: var(--border); }
+.nav-page { font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 800; color: var(--text); }
+.nav-right { display: flex; align-items: center; gap: 10px; }
+.nav-file { font-size: 12px; font-weight: 600; color: var(--muted); background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: all 0.15s; text-decoration: none; display: inline-flex; align-items: center; }
+.nav-btn:hover { border-color: var(--orange); color: var(--orange); }
+.nav-btn.primary { background: var(--orange); border-color: var(--orange); color: #fff; }
+.nav-btn.primary:hover { background: var(--orange2); border-color: var(--orange2); color: #fff; }
+
+/* Layout */
+.layout { display: flex; min-height: calc(100vh - 64px); }
+
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar);
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 20px 16px;
+  position: sticky;
+  top: 64px;
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.sidebar-title { font-size: 11px; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+
+.filter-group { margin-bottom: 20px; }
+.filter-group-label { font-size: 12px; font-weight: 800; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* Status tabs */
+.status-filters { display: flex; flex-direction: column; gap: 6px; }
+.status-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800; color: var(--muted); cursor: pointer; transition: all 0.15s; text-align: left; display: flex; align-items: center; justify-content: space-between; }
+.status-btn:hover { border-color: var(--orange); color: var(--orange); }
+.status-btn.active-all { background: rgba(255,107,0,0.12); border-color: var(--orange); color: var(--orange); }
+.status-btn.active-alarm { background: rgba(231,76,60,0.12); border-color: var(--red2); color: var(--red2); }
+.status-btn.active-ok { background: rgba(46,204,113,0.12); border-color: var(--green); color: var(--green); }
+.status-count { font-size: 12px; font-weight: 700; opacity: 0.7; }
+
+/* Search */
+.search-wrap { position: relative; }
+.search-wrap::before { content: '🔍'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 13px; }
+.search-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'Nunito Sans', sans-serif; font-size: 13px; font-weight: 600; padding: 9px 12px 9px 32px; outline: none; transition: border-color 0.15s; }
+.search-input:focus { border-color: var(--orange); }
+.search-input::placeholder { color: var(--muted2); }
+
+/* Range filter */
+.range-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.range-lbl { font-size: 11px; font-weight: 700; color: var(--muted2); width: 28px; }
+.range-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; font-weight: 700; padding: 6px 10px; outline: none; transition: border-color 0.15s; width: 100%; }
+.range-input:focus { border-color: var(--orange); }
+
+/* Text filter for extra columns */
+.col-search { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'Nunito Sans', sans-serif; font-size: 12px; font-weight: 600; padding: 7px 10px; outline: none; transition: border-color 0.15s; }
+.col-search:focus { border-color: var(--orange); }
+.col-search::placeholder { color: var(--muted2); }
+
+.clear-btn { width: 100%; background: transparent; border: 1px solid var(--border); color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 12px; font-weight: 800; padding: 9px; border-radius: 10px; cursor: pointer; transition: all 0.15s; margin-top: 8px; }
+.clear-btn:hover { border-color: var(--red2); color: var(--red2); }
+
+/* Main content */
+.content { flex: 1; padding: 24px; overflow: hidden; min-width: 0; }
+
+/* Results header */
+.results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+.results-count { font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800; color: var(--text); }
+.results-count span { color: var(--orange); }
+.sort-wrap { display: flex; align-items: center; gap: 8px; }
+.sort-lbl { font-size: 12px; font-weight: 700; color: var(--muted); }
+.sort-select { background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: 'Nunito Sans', sans-serif; font-size: 13px; font-weight: 600; padding: 7px 12px; border-radius: 8px; outline: none; cursor: pointer; }
+.sort-select:focus { border-color: var(--orange); }
+.sort-dir-btn { background: var(--surface); border: 1px solid var(--border); color: var(--muted); font-size: 14px; padding: 7px 12px; border-radius: 8px; cursor: pointer; transition: all 0.15s; }
+.sort-dir-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+/* Table */
+.table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 500px; }
+thead tr { background: var(--surface2); }
+thead th { font-family: 'Nunito', sans-serif; font-size: 11px; font-weight: 800; color: var(--muted); text-align: left; padding: 14px 18px; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; cursor: pointer; user-select: none; }
+thead th:hover { color: var(--orange); }
+thead th.sorted { color: var(--orange); }
+
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: rgba(255,255,255,0.03); }
+tbody tr.alarm-row { background: rgba(231,76,60,0.04); }
+tbody tr.alarm-row:hover { background: rgba(231,76,60,0.08); }
+
+td { padding: 13px 18px; font-size: 13px; white-space: nowrap; }
+.td-username { font-weight: 700; color: var(--text); font-size: 14px; }
+.td-num { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 16px; }
+.td-num.orange { color: var(--orange); }
+.td-num.red { color: var(--red2); }
+.td-num.muted { color: var(--muted); }
+.td-extra { color: var(--muted); font-size: 12px; }
+
+.bar-inline { display: flex; align-items: center; gap: 8px; }
+.bar-mini { width: 60px; height: 6px; background: var(--border); border-radius: 50px; overflow: hidden; flex-shrink: 0; }
+.bar-mini-fill { height: 100%; border-radius: 50px; }
+.bar-mini-fill.a { background: linear-gradient(90deg, var(--orange), var(--yellow)); }
+.bar-mini-fill.r { background: linear-gradient(90deg, var(--red), var(--red2)); }
+
+.badge { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 50px; font-family: 'Nunito', sans-serif; font-size: 11px; font-weight: 800; }
+.badge.ok { background: rgba(46,204,113,0.12); color: var(--green); }
+.badge.alarm { background: rgba(231,76,60,0.12); color: var(--red2); }
+
+/* Pagination */
+.pag { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+.pag-info { font-size: 13px; font-weight: 600; color: var(--muted); }
+.pag-btns { display: flex; gap: 5px; }
+.pag-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800; padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: all 0.15s; }
+.pag-btn:hover:not(:disabled), .pag-btn.cur { background: var(--orange); border-color: var(--orange); color: #fff; }
+.pag-btn:disabled { opacity: 0.3; cursor: default; }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+.empty-state div { font-size: 40px; margin-bottom: 12px; }
+.empty-state p { font-weight: 700; font-size: 14px; }
+
+/* Animations */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.fade-up { animation: fadeUp 0.35s ease forwards; }
+
+@media(max-width:720px){
+  .sidebar { display: none; }
+  .content { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ PANTALLA DE CARGA ══ -->
+<div id="uploadScreen">
+  <div class="bg-shapes">
+    <div class="bg-shape s1"></div>
+    <div class="bg-shape s2"></div>
+  </div>
+  <div class="upload-header">
+    <div class="tumo-wordmark">TUMO</div>
+    <div class="tumo-subtitle">Montevideo · Análisis Personal</div>
+  </div>
+  <div class="drop-card" id="dropZone">
+    <input type="file" id="fileInput" accept=".csv">
+    <span class="upload-emoji">📊</span>
+    <div class="drop-title">Subí el reporte de estudiantes</div>
+    <div class="drop-desc">Arrastrá el archivo CSV acá, o hacé click en el botón.<br>Vas a poder filtrar por cualquier dato.</div>
+    <button class="upload-cta" onclick="document.getElementById('fileInput').click()">Elegir archivo CSV</button>
+  </div>
+  <div class="error-toast" id="errorToast"></div>
+  <div class="rules-pills">
+    <div class="rule-pill">🗑 Se eliminan los que tienen <span class="hl">&nbsp;0 actividades</span></div>
+    <div class="rule-pill">🗑 Se eliminan los que tienen <span class="hl">&nbsp;más de 8</span></div>
+    <div class="rule-pill">🚨 Alarma: <span class="hl">&nbsp;menos de 3 aprobadas</span> o <span class="hl">&nbsp;más de 4 rechazadas</span></div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+
+  <nav class="topnav">
+    <div class="nav-left">
+      <a class="nav-brand" href="index.html">TUMO</a>
+      <div class="nav-sep"></div>
+      <div class="nav-page">Análisis Personal</div>
+    </div>
+    <div class="nav-right">
+      <div class="nav-file" id="navFile"></div>
+      <a class="nav-btn" href="index.html">← Dashboard</a>
+      <button class="nav-btn" onclick="resetToUpload()">↩ Nuevo archivo</button>
+    </div>
+  </nav>
+
+  <div class="layout">
+
+    <!-- ══ SIDEBAR ══ -->
+    <aside class="sidebar">
+      <div class="sidebar-title">Filtros</div>
+
+      <!-- Estado -->
+      <div class="filter-group">
+        <div class="filter-group-label">Estado</div>
+        <div class="status-filters">
+          <button class="status-btn active-all" id="btnAll" onclick="setStatus('all')">
+            👥 Todos <span class="status-count" id="cntAll">0</span>
+          </button>
+          <button class="status-btn" id="btnAlarm" onclick="setStatus('alarm')">
+            🚨 En alerta <span class="status-count" id="cntAlarm">0</span>
+          </button>
+          <button class="status-btn" id="btnOk" onclick="setStatus('ok')">
+            ✅ Sin alerta <span class="status-count" id="cntOk">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Buscar alumno -->
+      <div class="filter-group">
+        <div class="filter-group-label">Alumno</div>
+        <div class="search-wrap">
+          <input class="search-input" id="searchInput" placeholder="Buscar por nombre..." oninput="applyFilters()">
+        </div>
+      </div>
+
+      <!-- Aprobadas -->
+      <div class="filter-group">
+        <div class="filter-group-label">✅ Aprobadas</div>
+        <div class="range-row">
+          <div class="range-lbl">Mín</div>
+          <input class="range-input" type="number" id="aMin" min="0" placeholder="0" oninput="applyFilters()">
+        </div>
+        <div class="range-row">
+          <div class="range-lbl">Máx</div>
+          <input class="range-input" type="number" id="aMax" min="0" placeholder="8" oninput="applyFilters()">
+        </div>
+      </div>
+
+      <!-- Rechazadas -->
+      <div class="filter-group">
+        <div class="filter-group-label">❌ Rechazadas</div>
+        <div class="range-row">
+          <div class="range-lbl">Mín</div>
+          <input class="range-input" type="number" id="rMin" min="0" placeholder="0" oninput="applyFilters()">
+        </div>
+        <div class="range-row">
+          <div class="range-lbl">Máx</div>
+          <input class="range-input" type="number" id="rMax" min="0" placeholder="—" oninput="applyFilters()">
+        </div>
+      </div>
+
+      <!-- Extra column filters (generated dynamically) -->
+      <div id="extraFilters"></div>
+
+      <button class="clear-btn" onclick="clearFilters()">✕ Limpiar filtros</button>
+    </aside>
+
+    <!-- ══ CONTENT ══ -->
+    <div class="content">
+
+      <div class="results-header">
+        <div class="results-count">Mostrando <span id="resultCount">0</span> alumnos</div>
+        <div class="sort-wrap">
+          <div class="sort-lbl">Ordenar por:</div>
+          <select class="sort-select" id="sortKey" onchange="applyFilters()">
+            <option value="username">Nombre</option>
+            <option value="awarded" selected>Aprobadas</option>
+            <option value="rejected">Rechazadas</option>
+          </select>
+          <button class="sort-dir-btn" id="sortDirBtn" onclick="toggleSortDir()" title="Cambiar dirección">↓</button>
+        </div>
+      </div>
+
+      <div class="table-wrap fade-up">
+        <div class="table-scroll">
+          <table>
+            <thead id="thead">
+              <tr>
+                <th onclick="colSort('username')">Alumno <span id="th-username"></span></th>
+                <th onclick="colSort('awarded')">✅ Aprobadas <span id="th-awarded">↓</span></th>
+                <th onclick="colSort('rejected')">❌ Rechazadas <span id="th-rejected"></span></th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div class="pag">
+          <span class="pag-info" id="pagInfo"></span>
+          <div class="pag-btns">
+            <button class="pag-btn" id="prevBtn" onclick="goPage(page-1)">← Ant</button>
+            <span id="pagNums" class="pag-btns"></span>
+            <button class="pag-btn" id="nextBtn" onclick="goPage(page+1)">Sig →</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── State ── */
+let allData = [], filtered = [], extraCols = [];
+let statusFilter = 'all', sortKey = 'awarded', sortDir = -1, page = 1;
+const PAGE_SIZE = 30;
+
+/* ── Upload ── */
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragging'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragging'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragging'); if(e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', () => { if(fileInput.files[0]) processFile(fileInput.files[0]); });
+
+function showError(msg) { const el = document.getElementById('errorToast'); el.textContent = '⚠ ' + msg; el.style.display = 'block'; }
+
+function processFile(file) {
+  document.getElementById('errorToast').style.display = 'none';
+  if (!file.name.toLowerCase().endsWith('.csv')) { showError('El archivo tiene que ser .csv'); return; }
+  const r = new FileReader();
+  r.onload = e => parseAndLoad(e.target.result, file.name);
+  r.readAsText(file, 'UTF-8');
+}
+
+function splitLine(line) {
+  const res = []; let cur = '', inQ = false;
+  for (const ch of line) {
+    if (ch==='"') inQ=!inQ;
+    else if (ch===',' && !inQ) { res.push(cur); cur=''; }
+    else cur+=ch;
+  }
+  res.push(cur); return res;
+}
+
+function norm(s) { return s.toLowerCase().replace(/[\s_]/g,''); }
+
+function parseCSV(text) {
+  const lines = text.replace(/\r/g,'').split('\n').filter(l=>l.trim());
+  if (lines.length < 2) return { error: 'El archivo está vacío.' };
+  const hdr = splitLine(lines[0]).map(h => h.trim().replace(/^"|"$/g,''));
+
+  const fi = (...ns) => { for(const n of ns){ const i=hdr.findIndex(h=>norm(h)===norm(n)); if(i>=0) return i; } return -1; };
+  const iU = fi('UsernameLink','username','user');
+  const iA = fi('Awarded','awarded');
+  const iR = fi('Rejected','rejected');
+  if (iU<0||iA<0||iR<0) return { error: `No encontré las columnas necesarias. Columnas: ${hdr.join(', ')}` };
+
+  const coreIdx = new Set([iU, iA, iR]);
+  const extras = hdr.map((h,i) => ({ key: h, idx: i })).filter(x => !coreIdx.has(x.idx));
+
+  const rows = [];
+  for (let i=1; i<lines.length; i++) {
+    const c = splitLine(lines[i]);
+    const a = parseInt(c[iA],10), r = parseInt(c[iR],10);
+    if (isNaN(a)||isNaN(r)) continue;
+    if (a===0||a>16) continue;
+    const row = {
+      username: (c[iU]||'').trim().replace(/^"|"$/g,''),
+      awarded:  a / 2,
+      rejected: r / 2,
+    };
+    extras.forEach(ex => { row[ex.key] = (c[ex.idx]||'').trim().replace(/^"|"$/g,''); });
+    rows.push(row);
+  }
+  return { rows, extras };
+}
+
+function parseAndLoad(text, fname) {
+  document.getElementById('errorToast').style.display = 'none';
+  const res = parseCSV(text);
+  if (res.error) { showError(res.error); return; }
+  if (!res.rows.length) { showError('No quedaron alumnos después de la limpieza.'); return; }
+
+  allData = res.rows;
+  extraCols = res.extras;
+
+  document.getElementById('navFile').textContent = fname;
+  document.getElementById('uploadScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+
+  buildExtraFilters();
+  buildTableHeader();
+  buildSortSelect();
+  updateStatusCounts();
+  applyFilters();
+}
+
+function resetToUpload() {
+  document.getElementById('uploadScreen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  fileInput.value = '';
+  allData = []; extraCols = [];
+}
+
+/* ── Logic ── */
+function isAlarm(d) { return d.awarded < 3 || d.rejected > 4; }
+
+function buildExtraFilters() {
+  const el = document.getElementById('extraFilters');
+  if (!extraCols.length) { el.innerHTML = ''; return; }
+  el.innerHTML = extraCols.map(ex => `
+    <div class="filter-group">
+      <div class="filter-group-label">${ex.key}</div>
+      <input class="col-search" id="ef-${CSS.escape(ex.key)}" placeholder="Filtrar..." oninput="applyFilters()">
+    </div>
+  `).join('');
+}
+
+function buildTableHeader() {
+  const extraThs = extraCols.map(ex =>
+    `<th onclick="colSort('${ex.key}')">${ex.key} <span id="th-${ex.key}"></span></th>`
+  ).join('');
+  document.getElementById('thead').innerHTML = `
+    <tr>
+      <th onclick="colSort('username')">Alumno <span id="th-username"></span></th>
+      <th onclick="colSort('awarded')">✅ Aprobadas <span id="th-awarded">↓</span></th>
+      <th onclick="colSort('rejected')">❌ Rechazadas <span id="th-rejected"></span></th>
+      ${extraThs}
+      <th>Estado</th>
+    </tr>
+  `;
+}
+
+function buildSortSelect() {
+  const sel = document.getElementById('sortKey');
+  const current = sel.value;
+  sel.innerHTML = `
+    <option value="username">Nombre</option>
+    <option value="awarded" ${current==='awarded'?'selected':''}>Aprobadas</option>
+    <option value="rejected" ${current==='rejected'?'selected':''}>Rechazadas</option>
+    ${extraCols.map(ex=>`<option value="${ex.key}">${ex.key}</option>`).join('')}
+  `;
+  sel.value = current || 'awarded';
+}
+
+function updateStatusCounts() {
+  const alarms = allData.filter(isAlarm).length;
+  document.getElementById('cntAll').textContent   = allData.length;
+  document.getElementById('cntAlarm').textContent = alarms;
+  document.getElementById('cntOk').textContent    = allData.length - alarms;
+}
+
+/* ── Filters ── */
+function setStatus(s) {
+  statusFilter = s;
+  ['All','Alarm','Ok'].forEach(x => {
+    const btn = document.getElementById('btn'+x);
+    btn.className = 'status-btn' + (s === x.toLowerCase() ? ' active-'+x.toLowerCase() : '');
+  });
+  page = 1;
+  applyFilters();
+}
+
+function toggleSortDir() {
+  sortDir *= -1;
+  document.getElementById('sortDirBtn').textContent = sortDir === -1 ? '↓' : '↑';
+  applyFilters();
+}
+
+function colSort(key) {
+  if (sortKey === key) { sortDir *= -1; }
+  else { sortKey = key; sortDir = -1; }
+  document.getElementById('sortKey').value = key;
+  document.getElementById('sortDirBtn').textContent = sortDir === -1 ? '↓' : '↑';
+  updateSortIndicators();
+  applyFilters();
+}
+
+function updateSortIndicators() {
+  ['username','awarded','rejected',...extraCols.map(e=>e.key)].forEach(k => {
+    const el = document.getElementById('th-'+k);
+    if (el) el.textContent = sortKey===k ? (sortDir===-1?'↓':'↑') : '';
+  });
+}
+
+function applyFilters() {
+  sortKey = document.getElementById('sortKey').value;
+  updateSortIndicators();
+
+  const search  = document.getElementById('searchInput').value.toLowerCase().trim();
+  const aMinRaw = document.getElementById('aMin').value;
+  const aMaxRaw = document.getElementById('aMax').value;
+  const rMinRaw = document.getElementById('rMin').value;
+  const rMaxRaw = document.getElementById('rMax').value;
+  const aMin = aMinRaw !== '' ? parseFloat(aMinRaw) : -Infinity;
+  const aMax = aMaxRaw !== '' ? parseFloat(aMaxRaw) :  Infinity;
+  const rMin = rMinRaw !== '' ? parseFloat(rMinRaw) : -Infinity;
+  const rMax = rMaxRaw !== '' ? parseFloat(rMaxRaw) :  Infinity;
+
+  const extraSearches = extraCols.map(ex => {
+    const el = document.getElementById('ef-'+CSS.escape(ex.key));
+    return { key: ex.key, val: el ? el.value.toLowerCase().trim() : '' };
+  });
+
+  let data = allData.filter(d => {
+    if (statusFilter === 'alarm' && !isAlarm(d)) return false;
+    if (statusFilter === 'ok'    &&  isAlarm(d)) return false;
+    if (search && !d.username.toLowerCase().includes(search)) return false;
+    if (d.awarded < aMin || d.awarded > aMax) return false;
+    if (d.rejected < rMin || d.rejected > rMax) return false;
+    for (const es of extraSearches) {
+      if (es.val && !(d[es.key]||'').toLowerCase().includes(es.val)) return false;
+    }
+    return true;
+  });
+
+  data.sort((a, b) => {
+    const av = a[sortKey], bv = b[sortKey];
+    if (av < bv) return sortDir;
+    if (av > bv) return -sortDir;
+    return 0;
+  });
+
+  filtered = data;
+  page = Math.max(1, Math.min(page, Math.ceil(filtered.length / PAGE_SIZE) || 1));
+  renderTable();
+}
+
+function clearFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('aMin').value = '';
+  document.getElementById('aMax').value = '';
+  document.getElementById('rMin').value = '';
+  document.getElementById('rMax').value = '';
+  extraCols.forEach(ex => {
+    const el = document.getElementById('ef-'+CSS.escape(ex.key));
+    if (el) el.value = '';
+  });
+  setStatus('all');
+}
+
+function goPage(p) {
+  const max = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  page = Math.max(1, Math.min(p, max));
+  renderTable();
+}
+
+/* ── Render ── */
+function renderTable() {
+  const start = (page - 1) * PAGE_SIZE;
+  const slice = filtered.slice(start, start + PAGE_SIZE);
+  const mxA = 8, mxR = Math.max(5, ...allData.map(d => d.rejected), 1);
+
+  document.getElementById('resultCount').textContent = filtered.length;
+
+  const tbody = document.getElementById('tbody');
+  if (!slice.length) {
+    tbody.innerHTML = `<tr><td colspan="${4 + extraCols.length}" style="text-align:center;color:var(--muted);padding:50px;font-size:14px;font-weight:700;">Sin resultados 🔍</td></tr>`;
+  } else {
+    tbody.innerHTML = slice.map(d => {
+      const alarm = isAlarm(d);
+      const extraTds = extraCols.map(ex =>
+        `<td class="td-extra">${d[ex.key] || '—'}</td>`
+      ).join('');
+      return `<tr class="${alarm ? 'alarm-row' : ''}">
+        <td class="td-username">${d.username || '—'}</td>
+        <td>
+          <div class="bar-inline">
+            <span class="td-num orange">${d.awarded}</span>
+            <div class="bar-mini"><div class="bar-mini-fill a" style="width:${Math.round(d.awarded/mxA*100)}%"></div></div>
+          </div>
+        </td>
+        <td>
+          <div class="bar-inline">
+            <span class="td-num ${d.rejected > 0 ? 'red' : 'muted'}">${d.rejected}</span>
+            ${d.rejected > 0 ? `<div class="bar-mini"><div class="bar-mini-fill r" style="width:${Math.round(d.rejected/mxR*100)}%"></div></div>` : ''}
+          </div>
+        </td>
+        ${extraTds}
+        <td>${alarm
+          ? '<span class="badge alarm">🚨 En alerta</span>'
+          : '<span class="badge ok">✅ OK</span>'
+        }</td>
+      </tr>`;
+    }).join('');
+  }
+
+  const maxPage = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  document.getElementById('pagInfo').textContent =
+    filtered.length
+      ? `Mostrando ${start+1}–${Math.min(start+PAGE_SIZE, filtered.length)} de ${filtered.length}`
+      : 'Sin resultados';
+  document.getElementById('prevBtn').disabled = page <= 1;
+  document.getElementById('nextBtn').disabled = page >= maxPage;
+
+  let nums = '';
+  for (let p = Math.max(1, page-2); p <= Math.min(maxPage, page+2); p++) {
+    nums += `<button class="pag-btn${p===page?' cur':''}" onclick="goPage(${p})">${p}</button>`;
+  }
+  document.getElementById('pagNums').innerHTML = nums;
+}
+</script>
+</body>
+</html>
