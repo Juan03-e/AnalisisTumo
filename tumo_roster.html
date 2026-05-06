@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TUMO Roster</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', 'Segoe UI', sans-serif;
+    background: #0f0f11;
+    color: #e8e6e0;
+    min-height: 100vh;
+  }
+  .page-wrap { padding: 2rem; }
+
+  /* ── TUMO Nav ── */
+  .tumo-nav {
+    background: #111113;
+    border-bottom: 1px solid #232326;
+    padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px; position: sticky; top: 0; z-index: 200;
+  }
+  .tumo-nav-brand {
+    font-family: 'Nunito', sans-serif;
+    font-size: 28px; font-weight: 900; color: #ff6b00;
+    letter-spacing: -1px; text-decoration: none;
+  }
+  .tumo-nav-links { display: flex; align-items: center; gap: 2px; }
+  .tumo-nav-link {
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px; font-weight: 800; color: #888;
+    text-decoration: none; padding: 8px 14px; border-radius: 8px; transition: all 0.15s;
+  }
+  .tumo-nav-link:hover { color: #ff6b00; background: rgba(255,107,0,0.08); }
+  .tumo-nav-link.active { color: #ff6b00; background: rgba(255,107,0,0.1); }
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+  .logo {
+    width: 36px; height: 36px;
+    background: #c8f04a;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 14px; color: #0f0f11;
+  }
+  h1 { font-size: 20px; font-weight: 500; letter-spacing: -0.3px; }
+  .subtitle { font-size: 13px; color: #666; margin-top: 2px; }
+
+  .upload-area {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .upload-card {
+    border: 1px dashed #2a2a2e;
+    border-radius: 12px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+  .upload-card:hover { border-color: #c8f04a; background: #1a1a1e; }
+  .upload-card.loaded { border-color: #c8f04a; border-style: solid; background: #131a07; }
+  .upload-card input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-label { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+  .upload-name { font-size: 14px; font-weight: 500; color: #e8e6e0; }
+  .upload-icon { font-size: 22px; margin-bottom: 8px; }
+  .badge {
+    display: inline-block;
+    background: #c8f04a;
+    color: #0f0f11;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-top: 6px;
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .search-wrap {
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+  }
+  .search-wrap input {
+    width: 100%;
+    background: #1a1a1e;
+    border: 1px solid #2a2a2e;
+    border-radius: 8px;
+    padding: 8px 12px 8px 36px;
+    color: #e8e6e0;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+  }
+  .search-wrap input:focus { border-color: #c8f04a; }
+  .search-icon {
+    position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+    color: #555; font-size: 14px; pointer-events: none;
+  }
+  select {
+    background: #1a1a1e;
+    border: 1px solid #2a2a2e;
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #e8e6e0;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+  }
+  select:focus { border-color: #c8f04a; }
+
+  .stats {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .stat {
+    background: #1a1a1e;
+    border: 1px solid #2a2a2e;
+    border-radius: 10px;
+    padding: 0.75rem 1.25rem;
+  }
+  .stat-val { font-size: 22px; font-weight: 600; color: #c8f04a; }
+  .stat-lbl { font-size: 12px; color: #666; margin-top: 2px; }
+
+  .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #2a2a2e; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    background: #1a1a1e;
+    padding: 11px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: #666;
+    border-bottom: 1px solid #2a2a2e;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  thead th:hover { color: #c8f04a; }
+  thead th.sorted { color: #c8f04a; }
+  tbody tr { transition: background 0.1s; }
+  tbody tr:hover { background: #1a1a1e; }
+  tbody tr:not(:last-child) td { border-bottom: 1px solid #1e1e22; }
+  td {
+    padding: 11px 16px;
+    font-size: 13.5px;
+    color: #c8c6c0;
+    white-space: nowrap;
+  }
+  td.username {
+    font-family: 'DM Mono', monospace;
+    font-size: 12.5px;
+    color: #888;
+  }
+  .schedule-pill {
+    display: inline-block;
+    background: #1d2a0a;
+    color: #a0c840;
+    border: 1px solid #2d4010;
+    border-radius: 20px;
+    font-size: 12px;
+    padding: 3px 10px;
+    white-space: nowrap;
+  }
+  .tutor-pill {
+    display: inline-block;
+    background: #1a1a2e;
+    color: #8888cc;
+    border: 1px solid #2a2a44;
+    border-radius: 20px;
+    font-size: 12px;
+    padding: 3px 10px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #444;
+  }
+  .empty-state .big { font-size: 40px; margin-bottom: 1rem; }
+  .empty-state p { font-size: 15px; }
+
+  .no-match { text-align: center; padding: 3rem; color: #555; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<nav class="tumo-nav">
+  <a class="tumo-nav-brand" href="index.html">TUMO</a>
+  <div class="tumo-nav-links">
+    <a href="index.html" class="tumo-nav-link">📊 Dashboard</a>
+    <a href="analisis_personal.html" class="tumo-nav-link">👤 Análisis</a>
+    <a href="tumo_roster.html" class="tumo-nav-link active">📋 Roster</a>
+  </div>
+  <div style="width:160px"></div>
+</nav>
+
+<div class="page-wrap">
+
+<div class="upload-area">
+  <div class="upload-card" id="card-csv">
+    <input type="file" accept=".csv" id="input-csv" />
+    <div class="upload-icon">📋</div>
+    <div class="upload-label">Coach To-Do</div>
+    <div class="upload-name" id="name-csv">Subí el CSV</div>
+    <div id="badge-csv" style="display:none"><span class="badge">Cargado</span></div>
+  </div>
+  <div class="upload-card" id="card-xlsx">
+    <input type="file" accept=".xlsx,.xls" id="input-xlsx" />
+    <div class="upload-icon">📊</div>
+    <div class="upload-label">Onboarding Excel</div>
+    <div class="upload-name" id="name-xlsx">Subí el Excel</div>
+    <div id="badge-xlsx" style="display:none"><span class="badge">Cargado</span></div>
+  </div>
+</div>
+
+<div id="results-section" style="display:none">
+  <div class="stats">
+    <div class="stat"><div class="stat-val" id="stat-total">0</div><div class="stat-lbl">Estudiantes</div></div>
+    <div class="stat"><div class="stat-val" id="stat-match">0</div><div class="stat-lbl">Con match</div></div>
+    <div class="stat"><div class="stat-val" id="stat-no-match">0</div><div class="stat-lbl">Sin match</div></div>
+  </div>
+
+  <div class="controls">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search" placeholder="Buscar por nombre, username, tutor..." />
+    </div>
+    <select id="filter-schedule">
+      <option value="">Todos los horarios</option>
+    </select>
+    <select id="filter-tutor">
+      <option value="">Todos los tutores</option>
+    </select>
+  </div>
+  <div class="controls" style="margin-top: -0.5rem;">
+    <div style="display:flex; align-items:center; gap:10px; flex:1;">
+      <span style="font-size:12px;color:#666;white-space:nowrap;">Actividades &ge;</span>
+      <input type="range" id="range-actividades" min="0" max="20" step="1" value="0" style="flex:1;" oninput="document.getElementById('val-actividades').textContent=this.value;renderTable()">
+      <span id="val-actividades" style="font-size:13px;font-weight:500;min-width:28px;color:#c8f04a;">0</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px; flex:1;">
+      <span style="font-size:12px;color:#666;white-space:nowrap;">Rechazos &le;</span>
+      <input type="range" id="range-rechazos" min="0" max="20" step="1" value="20" style="flex:1;" oninput="document.getElementById('val-rechazos').textContent=this.value;renderTable()">
+      <span id="val-rechazos" style="font-size:13px;font-weight:500;min-width:28px;color:#c8f04a;">20</span>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th onclick="sortBy('tutor')">Tutor</th>
+          <th onclick="sortBy('username')">Username</th>
+          <th onclick="sortBy('nombre')">Nombre</th>
+          <th onclick="sortBy('apellido')">Apellido</th>
+          <th onclick="sortBy('horario')">Horario</th>
+          <th onclick="sortBy('actividades')">Actividades Completas</th>
+          <th onclick="sortBy('rechazos')">Rechazos</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div id="no-match-msg" class="no-match" style="display:none">No se encontraron resultados.</div>
+  </div>
+</div>
+
+<div id="empty-state" class="empty-state">
+  <div class="big">↑</div>
+  <p>Subí los dos archivos para ver el roster</p>
+</div>
+
+<script>
+const SCHEDULE_SHEETS = [
+  'Mon 1500  Thu 1500',
+  ' Mon 1700  Thu 1700',
+  'Tuesday 1500  Fri 1500',
+  'Tuesday 1700  Fri 1700',
+  'Wednesday 1500  Sat 0900',
+  'Wednesday 1700  Sat 1100'
+];
+const SCHEDULE_LABELS = {
+  'Mon 1500  Thu 1500': 'G1',
+  'Mon 1700  Thu 1700': 'G2',
+  'Tuesday 1500  Fri 1500': 'G3',
+  'Tuesday 1700  Fri 1700': 'G4',
+  'Wednesday 1500  Sat 0900': 'G5',
+  'Wednesday 1700  Sat 1100': 'G6'
+};
+function labelHorario(sheet) {
+  return SCHEDULE_LABELS[sheet.trim()] || sheet.trim();
+}
+
+let csvData = null;
+let xlsxData = null;
+let allRows = [];
+let sortCol = 'horario';
+let sortDir = 1;
+
+document.getElementById('input-csv').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  document.getElementById('name-csv').textContent = file.name;
+  document.getElementById('card-csv').classList.add('loaded');
+  document.getElementById('badge-csv').style.display = '';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    csvData = parseCSV(ev.target.result);
+    tryMerge();
+  };
+  reader.readAsText(file);
+});
+
+document.getElementById('input-xlsx').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  document.getElementById('name-xlsx').textContent = file.name;
+  document.getElementById('card-xlsx').classList.add('loaded');
+  document.getElementById('badge-xlsx').style.display = '';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    xlsxData = parseXLSX(ev.target.result);
+    tryMerge();
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+function parseCSV(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+  return lines.slice(1).map(line => {
+    const vals = splitCSVLine(line);
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = (vals[i] || '').replace(/^"|"$/g, '').trim());
+    return obj;
+  });
+}
+
+function splitCSVLine(line) {
+  const result = [];
+  let cur = '', inQ = false;
+  for (let c of line) {
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
+    else cur += c;
+  }
+  result.push(cur);
+  return result;
+}
+
+function parseXLSX(buffer) {
+  const wb = XLSX.read(buffer, { type: 'array' });
+  const result = {};
+  for (const sheetName of SCHEDULE_SHEETS) {
+    if (!wb.SheetNames.includes(sheetName)) continue;
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+    if (rows.length < 2) continue;
+    const header = rows[0].map(h => String(h).trim());
+    const usernameIdx = header.findIndex(h => h.toLowerCase() === 'username');
+    const coachIdx = header.findIndex(h => h.toLowerCase() === 'assigned coach');
+    const students = [];
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const username = String(row[usernameIdx] || '').trim();
+      const coach = String(row[coachIdx] || '').trim();
+      // Find nombre and apellido dynamically
+      let nombre = '', apellido = '';
+      const fnIdx = header.findIndex(h => ['first name', 'name'].includes(h.toLowerCase()));
+      const lnIdx = header.findIndex(h => ['last name', 'surname'].includes(h.toLowerCase()));
+      if (fnIdx >= 0) nombre = String(row[fnIdx] || '').trim();
+      if (lnIdx >= 0) apellido = String(row[lnIdx] || '').trim();
+      if (username) students.push({ username, coach, nombre, apellido });
+    }
+    result[sheetName.trim()] = students.map(s => ({...s, horario: labelHorario(sheetName)}));
+  }
+  return result;
+}
+
+function tryMerge() {
+  if (!csvData || !xlsxData) return;
+
+  // Build lookup: username → excel data
+  const excelMap = {};
+  for (const [sheet, students] of Object.entries(xlsxData)) {
+    for (const s of students) {
+      if (s.username) excelMap[s.username.toLowerCase()] = { ...s };
+    }
+  }
+
+  let matched = 0, unmatched = 0;
+  allRows = csvData.map(csvRow => {
+    const username = (csvRow['Username Link'] || '').trim().toLowerCase();
+    const ex = excelMap[username];
+    if (ex) {
+      matched++;
+      const awarded = parseFloat(csvRow['Awarded'] || 0);
+      const rejected = parseFloat(csvRow['Rejected'] || 0);
+      return {
+        tutor: ex.coach,
+        username: ex.username,
+        nombre: ex.nombre,
+        apellido: ex.apellido,
+        horario: ex.horario,
+        actividades: awarded / 2,
+        rechazos: rejected / 2
+      };
+    } else {
+      unmatched++;
+      return {
+        tutor: '—',
+        username: username,
+        nombre: '—',
+        apellido: '—',
+        horario: '—',
+        actividades: '—',
+        rechazos: '—'
+      };
+    }
+  });
+
+  document.getElementById('stat-total').textContent = allRows.length;
+  document.getElementById('stat-match').textContent = matched;
+  document.getElementById('stat-no-match').textContent = unmatched;
+
+  // Populate filters
+  const schedules = [...new Set(allRows.map(r => r.horario).filter(h => h && h !== '—'))].sort();
+  const tutors = [...new Set(allRows.map(r => r.tutor).filter(t => t && t !== '—'))].sort();
+  const schedSel = document.getElementById('filter-schedule');
+  const tutorSel = document.getElementById('filter-tutor');
+  schedSel.innerHTML = '<option value="">Todos los horarios</option>';
+  tutorSel.innerHTML = '<option value="">Todos los tutores</option>';
+  schedules.forEach(s => schedSel.innerHTML += `<option value="${s}">${s}</option>`);
+  tutors.forEach(t => tutorSel.innerHTML += `<option value="${t}">${t}</option>`);
+
+  const maxAct = Math.max(...allRows.map(r => typeof r.actividades === 'number' ? r.actividades : 0));
+  const maxRec = Math.max(...allRows.map(r => typeof r.rechazos === 'number' ? r.rechazos : 0));
+  const raAct = document.getElementById('range-actividades');
+  const raRec = document.getElementById('range-rechazos');
+  raAct.max = maxAct; raAct.value = 0; document.getElementById('val-actividades').textContent = 0;
+  raRec.max = maxRec; raRec.value = maxRec; document.getElementById('val-rechazos').textContent = maxRec;
+
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('results-section').style.display = '';
+  renderTable();
+}
+
+document.getElementById('search').addEventListener('input', renderTable);
+document.getElementById('filter-schedule').addEventListener('change', renderTable);
+document.getElementById('filter-tutor').addEventListener('change', renderTable);
+
+function sortBy(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = 1; }
+  renderTable();
+}
+
+function renderTable() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const sched = document.getElementById('filter-schedule').value;
+  const tutor = document.getElementById('filter-tutor').value;
+  const minAct = parseFloat(document.getElementById('range-actividades').value);
+  const maxRec = parseFloat(document.getElementById('range-rechazos').value);
+
+  let rows = allRows.filter(r => {
+    const matchQ = !q || [r.tutor, r.username, r.nombre, r.apellido, r.horario].some(v => String(v).toLowerCase().includes(q));
+    const matchS = !sched || r.horario === sched;
+    const matchT = !tutor || r.tutor === tutor;
+    const matchA = typeof r.actividades !== 'number' || r.actividades >= minAct;
+    const matchR = typeof r.rechazos !== 'number' || r.rechazos <= maxRec;
+    return matchQ && matchS && matchT && matchA && matchR;
+  });
+
+  rows.sort((a, b) => {
+    const av = a[sortCol];
+    const bv = b[sortCol];
+    if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * sortDir;
+    const as = String(av || '').toLowerCase();
+    const bs = String(bv || '').toLowerCase();
+    return as < bs ? -sortDir : as > bs ? sortDir : 0;
+  });
+
+  const tbody = document.getElementById('tbody');
+  const noMsg = document.getElementById('no-match-msg');
+  if (rows.length === 0) {
+    tbody.innerHTML = '';
+    noMsg.style.display = '';
+  } else {
+    noMsg.style.display = 'none';
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td><span class="tutor-pill">${esc(r.tutor)}</span></td>
+        <td class="username">${esc(r.username)}</td>
+        <td>${esc(r.nombre)}</td>
+        <td>${esc(r.apellido)}</td>
+        <td><span class="schedule-pill">${esc(r.horario)}</span></td>
+        <td style="text-align:center">${r.actividades === '—' ? '—' : r.actividades}</td>
+        <td style="text-align:center">${r.rechazos === '—' ? '—' : r.rechazos}</td>
+      </tr>
+    `).join('');
+  }
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</div><!-- /page-wrap -->
+</body>
+</html>

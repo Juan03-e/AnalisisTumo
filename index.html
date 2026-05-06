@@ -241,6 +241,11 @@ body {
 }
 .nav-reload:hover { border-color: var(--orange); color: var(--orange); }
 
+.nav-links { display: flex; align-items: center; gap: 2px; }
+.nav-link { font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800; color: var(--muted); text-decoration: none; padding: 8px 14px; border-radius: 8px; transition: all 0.15s; }
+.nav-link:hover { color: var(--orange); background: rgba(255,107,0,0.08); }
+.nav-link.active { color: var(--orange); background: rgba(255,107,0,0.1); }
+
 /* Main content */
 .main { padding: 28px; max-width: 1200px; margin: 0 auto; }
 
@@ -546,8 +551,21 @@ td { padding: 14px 20px; font-size: 14px; }
 </head>
 <body>
 
+<nav class="topnav">
+  <div class="nav-brand">TUMO</div>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link active">📊 Dashboard</a>
+    <a href="analisis_personal.html" class="nav-link">👤 Análisis</a>
+    <a href="tumo_roster.html" class="nav-link">📋 Roster</a>
+  </div>
+  <div class="nav-right">
+    <div class="nav-file" id="navFile" style="display:none"></div>
+    <button class="nav-reload" id="navReload" onclick="resetToUpload()" style="display:none">↩ Nuevo archivo</button>
+  </div>
+</nav>
+
 <!-- ══ PANTALLA DE CARGA ══ -->
-<div id="uploadScreen">
+<div id="uploadScreen" style="min-height:calc(100vh - 64px)">
   <div class="bg-shapes">
     <div class="bg-shape s1"></div>
     <div class="bg-shape s2"></div>
@@ -582,15 +600,6 @@ td { padding: 14px 20px; font-size: 14px; }
 
 <!-- ══ DASHBOARD ══ -->
 <div id="dashboard">
-
-  <nav class="topnav">
-    <div class="nav-brand">TUMO</div>
-    <div class="nav-right">
-      <div class="nav-file" id="navFile"></div>
-      <a href="analisis_personal.html" style="background:var(--orange);border:none;color:#fff;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;padding:8px 16px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;" id="navPersonal" style="display:none;">👤 Análisis Personal</a>
-      <button class="nav-reload" onclick="resetToUpload()">↩ Nuevo archivo</button>
-    </div>
-  </nav>
 
   <div class="main">
 
@@ -732,7 +741,8 @@ function parseAndLoad(text, fname) {
   if (!res.length) { showError('No quedaron alumnos después de la limpieza. Revisá que el archivo tenga datos con Awarded entre 1 y 16.'); return; }
   allData = res;
   document.getElementById('navFile').textContent = fname;
-  document.getElementById('navPersonal').style.display = 'inline-flex';
+  document.getElementById('navFile').style.display = '';
+  document.getElementById('navReload').style.display = '';
   document.getElementById('uploadScreen').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
   currentFilter='all'; searchVal=''; page=1; sortKey='awarded'; sortDir=-1;
@@ -743,6 +753,8 @@ function parseAndLoad(text, fname) {
 function resetToUpload() {
   document.getElementById('uploadScreen').style.display='flex';
   document.getElementById('dashboard').style.display='none';
+  document.getElementById('navFile').style.display='none';
+  document.getElementById('navReload').style.display='none';
   fileInput.value='';
 }
 

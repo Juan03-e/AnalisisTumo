@@ -73,6 +73,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Nunito Sans', sa
 .nav-btn   { background: transparent; border: 1px solid var(--border); color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: all 0.15s; text-decoration: none; display: inline-flex; align-items: center; }
 .nav-btn:hover { border-color: var(--orange); color: var(--orange); }
 
+.nav-links { display: flex; align-items: center; gap: 2px; }
+.nav-link { font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800; color: var(--muted); text-decoration: none; padding: 8px 14px; border-radius: 8px; transition: all 0.15s; }
+.nav-link:hover { color: var(--orange); background: rgba(255,107,0,0.08); }
+.nav-link.active { color: var(--orange); background: rgba(255,107,0,0.1); }
+
 /* Layout */
 .layout { display: flex; min-height: calc(100vh - 64px); }
 
@@ -156,8 +161,21 @@ td.td-id  { color: var(--muted2); font-size: 12px; }
 </head>
 <body>
 
+<nav class="topnav">
+  <div class="nav-brand">TUMO</div>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link">📊 Dashboard</a>
+    <a href="analisis_personal.html" class="nav-link active">👤 Análisis</a>
+    <a href="tumo_roster.html" class="nav-link">📋 Roster</a>
+  </div>
+  <div class="nav-right">
+    <div class="nav-file" id="navFile" style="display:none"></div>
+    <button class="nav-btn" id="navReload" onclick="resetToUpload()" style="display:none">↩ Nuevo archivo</button>
+  </div>
+</nav>
+
 <!-- ══ UPLOAD ══ -->
-<div id="uploadScreen">
+<div id="uploadScreen" style="min-height:calc(100vh - 64px)">
   <div class="bg-shapes"><div class="bg-shape s1"></div><div class="bg-shape s2"></div></div>
   <div class="upload-header">
     <div class="tumo-wordmark">TUMO</div>
@@ -175,19 +193,6 @@ td.td-id  { color: var(--muted2); font-size: 12px; }
 
 <!-- ══ APP ══ -->
 <div id="app">
-  <nav class="topnav">
-    <div class="nav-left">
-      <a class="nav-brand" href="index.html">TUMO</a>
-      <div class="nav-sep"></div>
-      <div class="nav-page">Análisis Personal</div>
-    </div>
-    <div class="nav-right">
-      <div class="nav-file" id="navFile"></div>
-      <a class="nav-btn" href="index.html">← Dashboard</a>
-      <button class="nav-btn" onclick="resetToUpload()">↩ Nuevo archivo</button>
-    </div>
-  </nav>
-
   <div class="layout">
     <!-- Sidebar -->
     <aside class="sidebar">
@@ -288,6 +293,8 @@ function parseAndLoad(text, fname) {
   page    = 1;
 
   document.getElementById('navFile').textContent = fname;
+  document.getElementById('navFile').style.display = '';
+  document.getElementById('navReload').style.display = '';
   document.getElementById('uploadScreen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
 
@@ -299,6 +306,8 @@ function parseAndLoad(text, fname) {
 function resetToUpload() {
   document.getElementById('uploadScreen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
+  document.getElementById('navFile').style.display = 'none';
+  document.getElementById('navReload').style.display = 'none';
   fileInput.value = '';
   allData = []; cols = [];
 }
