@@ -34,7 +34,7 @@ body {
    PANTALLA DE CARGA
 ══════════════════════════════════════ */
 #uploadScreen {
-  min-height: 100vh;
+  min-height: calc(100vh - 64px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -565,7 +565,7 @@ td { padding: 14px 20px; font-size: 14px; }
 </nav>
 
 <!-- ══ PANTALLA DE CARGA ══ -->
-<div id="uploadScreen" style="min-height:calc(100vh - 64px)">
+<div id="uploadScreen">
   <div class="bg-shapes">
     <div class="bg-shape s1"></div>
     <div class="bg-shape s2"></div>
