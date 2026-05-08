@@ -442,12 +442,20 @@ function tryMerge() {
     }
   });
 
-  // Unify tutor names that differ only in accents/case
+  // Aliases: normalize known abbreviations/variants to a canonical name
+  const TUTOR_ALIASES = {
+    'maxi': 'Maximiliano',
+    'maximiliano': 'Maximiliano',
+  };
+
+  // Remove "All Done" rows and unify tutor names
+  allRows = allRows.filter(r => normKey(r.tutor) !== 'all done');
+
   const tutorCanon = {};
   allRows.forEach(r => {
     if (r.tutor && r.tutor !== '—') {
       const k = normKey(r.tutor);
-      if (!tutorCanon[k]) tutorCanon[k] = r.tutor;
+      if (!tutorCanon[k]) tutorCanon[k] = TUTOR_ALIASES[k] || r.tutor;
     }
   });
   allRows.forEach(r => {
