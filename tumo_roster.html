@@ -442,6 +442,18 @@ function tryMerge() {
     }
   });
 
+  // Unify tutor names that differ only in accents/case
+  const tutorCanon = {};
+  allRows.forEach(r => {
+    if (r.tutor && r.tutor !== '—') {
+      const k = normKey(r.tutor);
+      if (!tutorCanon[k]) tutorCanon[k] = r.tutor;
+    }
+  });
+  allRows.forEach(r => {
+    if (r.tutor && r.tutor !== '—') r.tutor = tutorCanon[normKey(r.tutor)];
+  });
+
   document.getElementById('stat-total').textContent = allRows.length;
   document.getElementById('stat-match').textContent = matched;
   document.getElementById('stat-no-match').textContent = unmatched;
@@ -522,6 +534,10 @@ function renderTable() {
       </tr>
     `).join('');
   }
+}
+
+function normKey(s) {
+  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 }
 
 function esc(s) {
